@@ -29,14 +29,17 @@ module.exports.getAll = (authorId, query, page, perPage) => {
 // get book stats by author Id
 module.exports.getStatsByAuthorId = (authorInfo) => {
 
-  //TODO - fix this
-  if(authorInfo) {
-    return Book.aggregate([{$lookup: { from: "authors", localField: "authorId", foreignField:"_id", as: "author"} } ]);
+  // if true - add lookup with author document and return author details
+  if (authorInfo) {
+    return Book.aggregate([{ $group: { _id: "$authorId", numBooks: { $count: {} }, averagePageCount: { $avg: "$pageCount" }, titles: { $addToSet: "$title" } } },
+    { $lookup: { from: "authors", localField: "_id", foreignField: "_id", as: "author" } },
+    { $project: { authorId: "$_id", _id: 0, author: { "$arrayElemAt": ["$author", 0] }, numBooks: 1, averagePageCount: 1, titles: 1, } },
+    { $sort: { title: -1 } }]);
   }
   return Book.aggregate([
-    { $group: {_id: "$authorId", numBooks: { $count: {} },  averagePageCount: { $avg: "$pageCount"}, titles: { $addToSet: "$title" } } },
-    { $project: { authorId: "$_id", _id: 0, numBooks: 1, averagePageCount: 1, titles: 1 }}, 
-    { $sort: { title: -1 } } ]);
+    { $group: { _id: "$authorId", numBooks: { $count: {} }, averagePageCount: { $avg: "$pageCount" }, titles: { $addToSet: "$title" } } },
+    { $project: { authorId: "$_id", _id: 0, numBooks: 1, averagePageCount: 1, titles: 1 } },
+    { $sort: { title: -1 } }]);
 }
 
 module.exports.getById = (bookId) => {
