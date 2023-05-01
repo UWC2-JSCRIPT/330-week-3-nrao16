@@ -31,11 +31,14 @@ module.exports.getStatsByAuthorId = (authorInfo) => {
 
   // if true - add lookup with author document and return author details
   if ("true" === authorInfo?.toLowerCase()) {
-    return Book.aggregate([{ $group: { _id: "$authorId", numBooks: { $count: {} }, averagePageCount: { $avg: "$pageCount" }, titles: { $push: "$title" } } },
+    return Book.aggregate([
+    { $group: { _id: "$authorId", numBooks: { $count: {} }, averagePageCount: { $avg: "$pageCount" }, titles: { $push: "$title" } } },
     { $lookup: { from: "authors", localField: "_id", foreignField: "_id", as: "author" } },
-    { $project: { authorId: "$_id", _id: 0, author: { "$arrayElemAt": ["$author", 0] }, numBooks: 1, averagePageCount: 1, titles: 1, } },
+    { $unwind: "$author"},
+    { $project: { authorId: "$_id", _id: 0, numBooks: 1, averagePageCount: 1, titles: 1, author: 1} },
     { $sort: { title: -1 } }]);
   }
+  // no author details sent
   return Book.aggregate([
     { $group: { _id: "$authorId", numBooks: { $count: {} }, averagePageCount: { $avg: "$pageCount" }, titles: { $push: "$title" } } },
     { $project: { authorId: "$_id", _id: 0, numBooks: 1, averagePageCount: 1, titles: 1 } },
